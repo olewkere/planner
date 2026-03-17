@@ -227,7 +227,14 @@ async def complete_task(
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
     web_app_url = os.getenv("WEB_APP_URL", "https://your-app.render.com")
+    args = message.text.split(maxsplit=1)
+    
+    # Якщо є параметр після /start — це запрошення в групу
+    if len(args) > 1 and args[1].startswith("group_"):
+        await handle_group_invite(message, args[1])
+        return
 
+    # Звичайний /start
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[[
             InlineKeyboardButton(
@@ -241,6 +248,70 @@ async def cmd_start(message: Message):
         "Натисни кнопку нижче, щоб керувати завданнями:",
         reply_markup=keyboard,
     )
+
+
+async def handle_group_invite(message: Message, param: str):
+    """Додає юзера до групи по deep link."""
+    web_app_url = os.getenv("WEB_APP_URL", "")
+    
+    try:
+        group_id = int(param.replace("group_", ""))
+    except ValueError:
+        await message.answer("❌ Невалідне посилання.")
+        return
+
+    async with AsyncSessionLocal() as db:
+        # Перевіряємо чи група існує
+        result = await db.execute(select(Group).where(Group.id == group_id))
+        group = result.scalar_one_or_none()
+
+        if not group:
+            await message.answer("❌ Групу не знайдено або вона була видалена.")
+            return
+
+        # Зберігаємо/оновлюємо юзера в БД
+        user = User(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name or "",
+        )
+        await db.merge(user)
+
+        # Перевіряємо чи вже є в групі
+        result = await db.execute(
+            select(GroupMember).where(
+                GroupMember.group_id == group_id,
+                GroupMember.user_id == message.from_user.id,
+            )
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            await message.answer(
+                f"✅ Ти вже учасник групи «{group.name}»!",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                    InlineKeyboardButton(
+                        text="📋 Відкрити групу",
+                        web_app=WebAppInfo(url=f"{web_app_url}?group={group_id}"),
+                    )
+                ]])
+            )
+            return
+
+        # Додаємо до групи
+        member = GroupMember(group_id=group_id, user_id=message.from_user.id)
+        db.add(member)
+        await db.commit()
+
+        await message.answer(
+            f"🎉 Ти успішно приєднався до групи «{group.name}»!",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📋 Відкрити групу",
+                    web_app=WebAppInfo(url=f"{web_app_url}?group={group_id}"),
+                )
+            ]])
+        )
 
 
 # ── Reminders (APScheduler) ────────────────────────────────────────────────
