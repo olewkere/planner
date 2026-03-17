@@ -9,774 +9,577 @@
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:       var(--tg-theme-bg-color, #0f0f0f);
-      --bg2:      var(--tg-theme-secondary-bg-color, #1a1a1a);
-      --text:     var(--tg-theme-text-color, #f0f0f0);
-      --hint:     var(--tg-theme-hint-color, #888);
-      --accent:   #e879a0;
-      --accent2:  #7c6af7;
-      --success:  #4ade80;
-      --danger:   #f87171;
-      --warn:     #fbbf24;
-      --radius:   18px;
-      --radius-sm: 12px;
+      --bg:      var(--tg-theme-bg-color, #0f0f0f);
+      --bg2:     var(--tg-theme-secondary-bg-color, #1a1a1a);
+      --text:    var(--tg-theme-text-color, #f0f0f0);
+      --hint:    var(--tg-theme-hint-color, #888);
+      --accent:  #e879a0;
+      --accent2: #7c6af7;
+      --ok:      #4ade80;
+      --danger:  #f87171;
+      --warn:    #fbbf24;
+      --r:       18px;
+      --rs:      12px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: 'Geologica', sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; padding-bottom: 100px; font-weight: 300;
-    }
-
-    /* ── SCREENS ── */
+    body { font-family: 'Geologica', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 110px; font-weight: 300; }
     .screen { display: none; }
     .screen.active { display: block; }
 
-    /* ── HEADER ── */
-    .header {
-      padding: 20px 20px 0; display: flex; align-items: center; gap: 14px;
-      opacity: 0; animation: fadeUp .5s .1s forwards;
-    }
-    .avatar {
-      width: 48px; height: 48px; border-radius: 50%; overflow: hidden;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 700;
-      color: #fff; flex-shrink: 0;
-    }
-    .avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .header-text h1 { font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 600; }
-    .header-text .status { font-size: 12px; color: var(--hint); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--hint); transition: background .3s; }
-    .status-dot.ok { background: var(--success); }
+    /* header */
+    .header { padding: 20px 20px 0; display: flex; align-items: center; gap: 14px; opacity: 0; animation: up .5s .1s forwards; }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: linear-gradient(135deg,var(--accent),var(--accent2)); display: flex; align-items: center; justify-content: center; font-family:'Unbounded',sans-serif; font-size:18px; font-weight:700; color:#fff; flex-shrink:0; }
+    .avatar img { width:100%; height:100%; object-fit:cover; }
+    .htext h1 { font-family:'Unbounded',sans-serif; font-size:16px; font-weight:600; }
+    .htext .status { font-size:12px; color:var(--hint); display:flex; align-items:center; gap:4px; margin-top:2px; }
+    .sdot { width:6px; height:6px; border-radius:50%; background:var(--hint); transition:background .3s; }
+    .sdot.ok { background:var(--ok); }
 
-    /* ── BACK BTN ── */
-    .back-btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 20px 20px 0; font-size: 14px; color: var(--accent);
-      cursor: pointer; width: fit-content;
-      opacity: 0; animation: fadeUp .3s .05s forwards;
-    }
+    /* back */
+    .back { display:flex; align-items:center; gap:8px; padding:20px 20px 0; font-size:14px; color:var(--accent); cursor:pointer; width:fit-content; opacity:0; animation:up .3s .05s forwards; }
 
-    /* ── TABS ── */
-    .tabs { display: flex; gap: 8px; padding: 20px 20px 0; opacity: 0; animation: fadeUp .5s .2s forwards; }
-    .tab {
-      flex: 1; padding: 10px 0; text-align: center;
-      font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 400;
-      border-radius: var(--radius-sm); background: var(--bg2); color: var(--hint);
-      cursor: pointer; transition: all .25s; border: none; outline: none;
-    }
-    .tab.active { background: var(--accent); color: #fff; }
+    /* tabs */
+    .tabs { display:flex; gap:8px; padding:20px 20px 0; opacity:0; animation:up .5s .2s forwards; }
+    .tab { flex:1; padding:10px 0; text-align:center; font-family:'Unbounded',sans-serif; font-size:11px; border-radius:var(--rs); background:var(--bg2); color:var(--hint); cursor:pointer; transition:all .25s; border:none; outline:none; }
+    .tab.active { background:var(--accent); color:#fff; }
 
-    /* ── FILTERS ── */
-    .filters {
-      display: flex; gap: 8px; padding: 14px 20px 0;
-      overflow-x: auto; scrollbar-width: none;
-      opacity: 0; animation: fadeUp .5s .3s forwards;
-    }
-    .filters::-webkit-scrollbar { display: none; }
-    .filter-btn {
-      flex-shrink: 0; padding: 7px 14px; border-radius: 100px;
-      font-size: 12px; background: var(--bg2); color: var(--hint);
-      cursor: pointer; transition: all .2s; border: none; outline: none;
-      font-family: 'Geologica', sans-serif;
-    }
-    .filter-btn.active { background: var(--accent); color: #fff; }
+    /* filters */
+    .filters { display:flex; gap:8px; padding:14px 20px 0; overflow-x:auto; scrollbar-width:none; opacity:0; animation:up .5s .3s forwards; }
+    .filters::-webkit-scrollbar { display:none; }
+    .fb { flex-shrink:0; padding:7px 14px; border-radius:100px; font-size:12px; background:var(--bg2); color:var(--hint); cursor:pointer; transition:all .2s; border:none; font-family:'Geologica',sans-serif; }
+    .fb.active { background:var(--accent); color:#fff; }
 
-    /* ── SECTION ── */
-    .section { margin: 16px 20px 0; opacity: 0; animation: fadeUp .5s .35s forwards; }
-    .section-label {
-      font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
-      color: var(--hint); font-family: 'Unbounded', sans-serif; font-weight: 400; margin-bottom: 10px;
-    }
+    /* section */
+    .sec { margin:16px 20px 0; opacity:0; animation:up .5s .35s forwards; }
+    .sec-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--hint); font-family:'Unbounded',sans-serif; margin-bottom:10px; }
 
-    /* ── TASK CARD ── */
-    .task-list { display: flex; flex-direction: column; gap: 8px; }
-    .task-card {
-      background: var(--bg2); border-radius: var(--radius); padding: 16px;
-      display: flex; align-items: center; gap: 12px;
-      transition: transform .15s, opacity .2s; cursor: pointer;
-    }
-    .task-card:active { transform: scale(.98); }
-    .task-card.done { opacity: .45; }
-    .task-card.done .task-title { text-decoration: line-through; }
-    .task-check {
-      width: 24px; height: 24px; border-radius: 50%;
-      border: 2px solid var(--hint); flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; transition: all .2s;
-    }
-    .task-card.done .task-check { background: var(--success); border-color: var(--success); }
-    .task-check svg { display: none; }
-    .task-card.done .task-check svg { display: block; }
-    .task-body { flex: 1; min-width: 0; }
-    .task-title { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .task-meta { font-size: 11px; color: var(--hint); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
-    .task-badge { font-size: 10px; padding: 2px 7px; border-radius: 100px; font-weight: 500; }
-    .badge-daily    { background: rgba(124,106,247,.2); color: var(--accent2); }
-    .badge-date     { background: rgba(232,121,160,.2); color: var(--accent); }
-    .badge-seasonal { background: rgba(251,191,36,.15); color: var(--warn); }
+    /* list */
+    .lst { display:flex; flex-direction:column; gap:8px; }
 
-    /* ── GROUP CARD ── */
-    .group-card {
-      background: var(--bg2); border-radius: var(--radius); padding: 16px;
-      display: flex; align-items: center; gap: 14px; cursor: pointer; transition: transform .15s;
-    }
-    .group-card:active { transform: scale(.98); }
-    .group-icon {
-      width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      display: flex; align-items: center; justify-content: center; font-size: 20px;
-    }
-    .group-info { flex: 1; min-width: 0; }
-    .group-name { font-size: 14px; font-weight: 500; }
-    .group-meta { font-size: 12px; color: var(--hint); margin-top: 2px; }
-    .group-arrow { color: var(--hint); font-size: 20px; line-height: 1; }
+    /* task card */
+    .tc { background:var(--bg2); border-radius:var(--r); padding:14px 16px; display:flex; align-items:center; gap:12px; animation:up .3s both; }
+    .tc.done { opacity:.4; }
+    .tc.done .tt { text-decoration:line-through; }
+    .chk { width:24px; height:24px; border-radius:50%; border:2px solid var(--hint); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; }
+    .tc.done .chk { background:var(--ok); border-color:var(--ok); }
+    .chk svg { display:none; }
+    .tc.done .chk svg { display:block; }
+    .tb { flex:1; min-width:0; cursor:pointer; }
+    .tt { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tm { font-size:11px; color:var(--hint); margin-top:3px; display:flex; align-items:center; gap:6px; }
+    .badge { font-size:10px; padding:2px 7px; border-radius:100px; font-weight:500; }
+    .bd { background:rgba(124,106,247,.2); color:var(--accent2); }
+    .bdate { background:rgba(232,121,160,.2); color:var(--accent); }
+    .bs { background:rgba(251,191,36,.15); color:var(--warn); }
+    /* task actions */
+    .ta { display:flex; gap:6px; flex-shrink:0; }
+    .icon-btn { width:30px; height:30px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s; background:transparent; }
+    .icon-btn.edit   { color:var(--hint); }
+    .icon-btn.edit:active   { background:rgba(255,255,255,.08); }
+    .icon-btn.del    { color:var(--danger); }
+    .icon-btn.del:active    { background:rgba(248,113,113,.12); }
 
-    /* ── GROUP DETAIL ── */
-    .group-detail-header {
-      margin: 16px 20px 0; padding: 20px; background: var(--bg2); border-radius: var(--radius);
-      opacity: 0; animation: fadeUp .4s .1s forwards;
-    }
-    .group-detail-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; }
-    .group-detail-meta { font-size: 12px; color: var(--hint); margin-top: 6px; }
-    .group-actions { display: flex; gap: 8px; margin-top: 14px; }
-    .btn-action {
-      flex: 1; padding: 10px 12px; border-radius: var(--radius-sm);
-      font-size: 12px; font-family: 'Unbounded', sans-serif;
-      cursor: pointer; transition: all .2s; border: none; outline: none;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .btn-invite { background: rgba(232,121,160,.15); color: var(--accent); }
-    .btn-invite:active { background: rgba(232,121,160,.25); }
+    /* group card */
+    .gc { background:var(--bg2); border-radius:var(--r); padding:16px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:transform .15s; animation:up .3s both; }
+    .gc:active { transform:scale(.98); }
+    .gi { width:44px; height:44px; border-radius:14px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px; }
+    .gi.own  { background:linear-gradient(135deg,var(--accent2),var(--accent)); }
+    .gi.mem  { background:linear-gradient(135deg,#3a3a3a,#555); }
+    .ginfo { flex:1; min-width:0; }
+    .gname { font-size:14px; font-weight:500; }
+    .gmeta { font-size:12px; color:var(--hint); margin-top:2px; }
+    .garr  { color:var(--hint); font-size:20px; }
 
-    /* ── MEMBER CARD ── */
-    .member-card {
-      background: var(--bg2); border-radius: var(--radius); padding: 14px 16px;
-      display: flex; align-items: center; gap: 12px;
-    }
-    .member-avatar {
-      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 600; color: #fff; font-family: 'Unbounded', sans-serif;
-    }
-    .member-info { flex: 1; min-width: 0; }
-    .member-name { font-size: 14px; }
-    .member-username { font-size: 12px; color: var(--hint); margin-top: 2px; }
-    .member-role { font-size: 10px; padding: 3px 8px; border-radius: 100px; white-space: nowrap; }
-    .role-owner  { background: rgba(251,191,36,.15); color: var(--warn); }
-    .role-member { background: rgba(255,255,255,.08); color: var(--hint); }
-    .btn-remove {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(248,113,113,.12); color: var(--danger);
-      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: background .2s; flex-shrink: 0;
-    }
-    .btn-remove:active { background: rgba(248,113,113,.25); }
+    /* group detail */
+    .gdh { margin:16px 20px 0; padding:20px; background:var(--bg2); border-radius:var(--r); opacity:0; animation:up .4s .1s forwards; }
+    .gdtitle { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:600; }
+    .gdmeta  { font-size:12px; color:var(--hint); margin-top:6px; }
+    .gacts   { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+    .abtn { padding:10px 12px; border-radius:var(--rs); font-size:12px; font-family:'Unbounded',sans-serif; cursor:pointer; transition:all .2s; border:none; display:flex; align-items:center; justify-content:center; gap:6px; }
+    .a-invite { background:rgba(232,121,160,.15); color:var(--accent); }
+    .a-delete { background:rgba(248,113,113,.12); color:var(--danger); }
 
-    /* ── EMPTY ── */
-    .empty-state { text-align: center; padding: 48px 20px; color: var(--hint); }
-    .empty-icon { font-size: 40px; margin-bottom: 12px; }
-    .empty-state p { font-size: 14px; line-height: 1.5; }
+    /* member card */
+    .mc { background:var(--bg2); border-radius:var(--r); padding:14px 16px; display:flex; align-items:center; gap:12px; animation:up .3s both; }
+    .mav { width:38px; height:38px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--accent2),var(--accent)); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#fff; font-family:'Unbounded',sans-serif; }
+    .mi { flex:1; min-width:0; }
+    .mn { font-size:14px; }
+    .mu { font-size:12px; color:var(--hint); margin-top:2px; }
+    .mrole { font-size:10px; padding:3px 8px; border-radius:100px; white-space:nowrap; }
+    .ro { background:rgba(251,191,36,.15); color:var(--warn); }
+    .rm { background:rgba(255,255,255,.08); color:var(--hint); }
+    .rem-btn { width:32px; height:32px; border-radius:50%; background:rgba(248,113,113,.12); color:var(--danger); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .rem-btn:active { background:rgba(248,113,113,.25); }
 
-    /* ── FAB ── */
-    .fab {
-      position: fixed; bottom: 24px; left: 20px; right: 20px; padding: 16px;
-      background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
-      font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 8px 32px rgba(232,121,160,.35);
-      transition: transform .15s, box-shadow .15s; z-index: 100;
-    }
-    .fab:active { transform: scale(.97); }
-    .fab.purple { background: var(--accent2); box-shadow: 0 8px 32px rgba(124,106,247,.35); }
+    /* empty */
+    .empty { text-align:center; padding:48px 20px; color:var(--hint); }
+    .ei { font-size:40px; margin-bottom:12px; }
+    .empty p { font-size:14px; line-height:1.5; }
 
-    /* ── MODAL ── */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200;
-      display: flex; align-items: flex-end;
-      opacity: 0; pointer-events: none; transition: opacity .25s;
-    }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
-    .modal {
-      width: 100%; background: var(--bg2); border-radius: 24px 24px 0 0;
-      padding: 24px 20px 40px;
-      transform: translateY(100%); transition: transform .3s cubic-bezier(.16,1,.3,1);
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
-    .modal-handle { width: 40px; height: 4px; background: var(--hint); border-radius: 2px; margin: 0 auto 20px; opacity: .4; }
-    .modal-title { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 20px; }
+    /* fab */
+    .fab { position:fixed; bottom:24px; left:20px; right:20px; padding:16px; background:var(--accent); color:#fff; border:none; border-radius:var(--r); font-family:'Unbounded',sans-serif; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 32px rgba(232,121,160,.35); transition:transform .15s; z-index:100; }
+    .fab:active { transform:scale(.97); }
+    .fab.v2 { background:var(--accent2); box-shadow:0 8px 32px rgba(124,106,247,.35); }
 
-    /* ── FORM ── */
-    .field { margin-bottom: 14px; }
-    .field label {
-      display: block; font-size: 11px; text-transform: uppercase;
-      letter-spacing: .06em; color: var(--hint);
-      font-family: 'Unbounded', sans-serif; margin-bottom: 7px;
-    }
-    .field input, .field select {
-      width: 100%; background: var(--bg); border: 1.5px solid rgba(255,255,255,.08);
-      border-radius: var(--radius-sm); padding: 13px 14px; color: var(--text);
-      font-family: 'Geologica', sans-serif; font-size: 14px;
-      outline: none; transition: border-color .2s; -webkit-appearance: none;
-    }
-    .field input:focus, .field select:focus { border-color: var(--accent); }
-    .field select option { background: #222; }
-    .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .type-btn {
-      padding: 10px 4px; text-align: center;
-      background: var(--bg); border: 1.5px solid rgba(255,255,255,.08);
-      border-radius: var(--radius-sm); font-size: 11px; color: var(--hint);
-      cursor: pointer; transition: all .2s; font-family: 'Geologica', sans-serif;
-    }
-    .type-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(232,121,160,.1); }
-    .type-btn .type-icon { font-size: 18px; display: block; margin-bottom: 4px; }
-    .btn-submit {
-      width: 100%; padding: 15px; background: var(--accent); color: #fff;
-      border: none; border-radius: var(--radius-sm);
-      font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 600;
-      cursor: pointer; margin-top: 8px; transition: opacity .2s;
-    }
-    .btn-submit:disabled { opacity: .5; cursor: default; }
+    /* modal */
+    .mo { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .mo.open { opacity:1; pointer-events:all; }
+    .md { width:100%; background:var(--bg2); border-radius:24px 24px 0 0; padding:24px 20px 40px; transform:translateY(100%); transition:transform .3s cubic-bezier(.16,1,.3,1); }
+    .mo.open .md { transform:translateY(0); }
+    .mh { width:40px; height:4px; background:var(--hint); border-radius:2px; margin:0 auto 20px; opacity:.4; }
+    .mtitle { font-family:'Unbounded',sans-serif; font-size:15px; font-weight:600; margin-bottom:20px; }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .task-card, .group-card, .member-card { animation: fadeUp .3s both; }
+    /* form */
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--hint); font-family:'Unbounded',sans-serif; margin-bottom:7px; }
+    .field input, .field select { width:100%; background:var(--bg); border:1.5px solid rgba(255,255,255,.08); border-radius:var(--rs); padding:13px 14px; color:var(--text); font-family:'Geologica',sans-serif; font-size:14px; outline:none; transition:border-color .2s; appearance:none; -webkit-appearance:none; }
+    .field input:focus, .field select:focus { border-color:var(--accent); }
+    .field select option { background:#222; }
+    .tgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .tbtn { padding:10px 4px; text-align:center; background:var(--bg); border:1.5px solid rgba(255,255,255,.08); border-radius:var(--rs); font-size:11px; color:var(--hint); cursor:pointer; transition:all .2s; font-family:'Geologica',sans-serif; }
+    .tbtn.active { border-color:var(--accent); color:var(--accent); background:rgba(232,121,160,.1); }
+    .tbtn .ti { font-size:18px; display:block; margin-bottom:4px; }
+    .submit { width:100%; padding:15px; background:var(--accent); color:#fff; border:none; border-radius:var(--rs); font-family:'Unbounded',sans-serif; font-size:13px; font-weight:600; cursor:pointer; margin-top:8px; transition:opacity .2s; }
+    .submit:disabled { opacity:.5; cursor:default; }
+
+    @keyframes up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
   </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════
-     SCREEN: MAIN
-══════════════════════════════════════ -->
+<!-- SCREEN: MAIN -->
 <div class="screen active" id="screen-main">
-
   <div class="header">
-    <div class="avatar" id="user-avatar">?</div>
-    <div class="header-text">
-      <h1 id="user-name">Planner</h1>
-      <div class="status">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="auth-status">Підключення...</span>
-      </div>
+    <div class="avatar" id="av">?</div>
+    <div class="htext">
+      <h1 id="uname">Planner</h1>
+      <div class="status"><div class="sdot" id="sdot"></div><span id="sstatus">Підключення...</span></div>
     </div>
   </div>
-
   <div class="tabs">
-    <button class="tab active" id="tab-tasks"  onclick="switchTab('tasks')">Завдання</button>
-    <button class="tab"        id="tab-groups" onclick="switchTab('groups')">Групи</button>
+    <button class="tab active" id="tab-t" onclick="switchTab('tasks')">Завдання</button>
+    <button class="tab"        id="tab-g" onclick="switchTab('groups')">Групи</button>
   </div>
-
   <div class="filters" id="filters">
-    <button class="filter-btn active" onclick="setFilter('all',this)">Всі</button>
-    <button class="filter-btn" onclick="setFilter('specific_date',this)">📅 По даті</button>
-    <button class="filter-btn" onclick="setFilter('daily',this)">🔁 Щоденні</button>
-    <button class="filter-btn" onclick="setFilter('seasonal',this)">🌿 Сезонні</button>
-    <button class="filter-btn" onclick="setFilter('done',this)">✅ Виконані</button>
+    <button class="fb active" onclick="setF('all',this)">Всі</button>
+    <button class="fb" onclick="setF('specific_date',this)">📅 По даті</button>
+    <button class="fb" onclick="setF('daily',this)">🔁 Щоденні</button>
+    <button class="fb" onclick="setF('seasonal',this)">🌿 Сезонні</button>
+    <button class="fb" onclick="setF('done',this)">✅ Виконані</button>
   </div>
-
-  <div class="section" id="section-tasks">
-    <div class="section-label">Мої плани</div>
-    <div class="task-list" id="task-list">
-      <div class="empty-state"><div class="empty-icon">📋</div><p>Завдань поки немає</p></div>
-    </div>
+  <div class="sec" id="sec-tasks">
+    <div class="sec-lbl">Мої плани</div>
+    <div class="lst" id="task-list"><div class="empty"><div class="ei">📋</div><p>Завдань поки немає</p></div></div>
   </div>
-
-  <div class="section" id="section-groups" style="display:none">
-    <div class="section-label">Мої групи</div>
-    <div class="task-list" id="group-list">
-      <div class="empty-state"><div class="empty-icon">👥</div><p>Груп поки немає</p></div>
-    </div>
+  <div class="sec" id="sec-groups" style="display:none">
+    <div class="sec-lbl">Мої групи</div>
+    <div class="lst" id="group-list"><div class="empty"><div class="ei">👥</div><p>Груп поки немає</p></div></div>
   </div>
-
-  <button class="fab" id="main-fab" onclick="openMainModal()">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
-    <span id="fab-label">Нове завдання</span>
+  <button class="fab" id="mfab" onclick="openMainModal()">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <span id="flbl">Нове завдання</span>
   </button>
 </div>
 
-<!-- ══════════════════════════════════════
-     SCREEN: GROUP DETAIL
-══════════════════════════════════════ -->
+<!-- SCREEN: GROUP DETAIL -->
 <div class="screen" id="screen-group">
-
-  <div class="back-btn" onclick="goBack()">
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path d="M11 4L6 9l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+  <div class="back" onclick="goBack()">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Назад
   </div>
-
-  <div class="group-detail-header">
-    <div class="group-detail-title" id="gd-name">—</div>
-    <div class="group-detail-meta"  id="gd-meta">—</div>
-    <div class="group-actions">
-      <button class="btn-action btn-invite" onclick="shareCurrentGroup()">
-        📤 Запросити учасника
-      </button>
+  <div class="gdh">
+    <div class="gdtitle" id="gd-name">—</div>
+    <div class="gdmeta"  id="gd-meta">—</div>
+    <div class="gacts">
+      <button class="abtn a-invite" onclick="shareGrp()">📤 Запросити</button>
+      <button class="abtn a-delete" id="btn-del-grp" onclick="deleteGroup()" style="display:none">🗑 Видалити групу</button>
     </div>
   </div>
-
-  <div class="section" style="animation-delay:.15s">
-    <div class="section-label">Учасники</div>
-    <div class="task-list" id="member-list">
-      <div class="empty-state"><div class="empty-icon">👤</div><p>Учасників поки немає</p></div>
-    </div>
+  <div class="sec" style="animation-delay:.15s">
+    <div class="sec-lbl">Учасники</div>
+    <div class="lst" id="member-list"><div class="empty"><div class="ei">👤</div><p>Учасників поки немає</p></div></div>
   </div>
-
-  <div class="section" style="animation-delay:.2s">
-    <div class="section-label">Завдання групи</div>
-    <div class="task-list" id="group-task-list">
-      <div class="empty-state"><div class="empty-icon">📋</div><p>Завдань поки немає</p></div>
-    </div>
+  <div class="sec" style="animation-delay:.2s">
+    <div class="sec-lbl">Завдання групи</div>
+    <div class="lst" id="gtask-list"><div class="empty"><div class="ei">📋</div><p>Завдань поки немає</p></div></div>
   </div>
-
-  <button class="fab purple" id="group-fab" onclick="openGroupTaskModal()" style="display:none">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
-    Нове завдання групи
+  <button class="fab v2" id="gfab" onclick="openGTaskModal()" style="display:none">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    Нове завдання
   </button>
 </div>
 
-<!-- ══════════════════════════════════════
-     MODAL
-══════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-title">Нове завдання</div>
+<!-- MODAL -->
+<div class="mo" id="mo" onclick="outsideClose(event)">
+  <div class="md">
+    <div class="mh"></div>
+    <div class="mtitle" id="mtitle">—</div>
 
     <!-- особисте завдання -->
-    <div id="task-form">
-      <div class="field">
-        <label>Назва завдання</label>
-        <input type="text" id="task-title-input" placeholder="Наприклад: Купити продукти" maxlength="100">
-      </div>
-      <div class="field">
-        <label>Тип завдання</label>
-        <div class="type-grid">
-          <button class="type-btn active" onclick="selectType('specific_date',this)"><span class="type-icon">📅</span>По даті</button>
-          <button class="type-btn"        onclick="selectType('daily',this)">        <span class="type-icon">🔁</span>Щодня</button>
-          <button class="type-btn"        onclick="selectType('seasonal',this)">     <span class="type-icon">🌿</span>Сезонне</button>
+    <div id="f-task">
+      <div class="field"><label>Назва</label><input type="text" id="ti" placeholder="Наприклад: Купити продукти" maxlength="100"></div>
+      <div class="field"><label>Тип</label>
+        <div class="tgrid">
+          <button class="tbtn active" onclick="selT('specific_date',this)"><span class="ti">📅</span>По даті</button>
+          <button class="tbtn"        onclick="selT('daily',this)">        <span class="ti">🔁</span>Щодня</button>
+          <button class="tbtn"        onclick="selT('seasonal',this)">     <span class="ti">🌿</span>Сезонне</button>
         </div>
       </div>
-      <div class="field" id="date-field"   style="display:none"><label>Дата</label><input type="date" id="task-date-input"></div>
-      <div class="field" id="season-field" style="display:none">
-        <label>Сезон</label>
-        <select id="task-season-input">
-          <option value="winter">❄️ Зима</option><option value="spring">🌸 Весна</option>
-          <option value="summer">☀️ Літо</option><option value="autumn">🍂 Осінь</option>
-        </select>
-      </div>
-      <button class="btn-submit" id="task-submit-btn" onclick="submitTask()">Додати завдання</button>
+      <div class="field" id="df"  style="display:none"><label>Дата</label><input type="date" id="tdi"></div>
+      <div class="field" id="sf"  style="display:none"><label>Сезон</label><select id="tsi"><option value="winter">❄️ Зима</option><option value="spring">🌸 Весна</option><option value="summer">☀️ Літо</option><option value="autumn">🍂 Осінь</option></select></div>
+      <button class="submit" id="ts-btn" onclick="submitTask()">Додати завдання</button>
+    </div>
+
+    <!-- редагування завдання -->
+    <div id="f-edit" style="display:none">
+      <div class="field"><label>Назва</label><input type="text" id="ei" maxlength="100"></div>
+      <div class="field" id="edf"><label>Дата</label><input type="date" id="edi"></div>
+      <div class="field" id="esf" style="display:none"><label>Сезон</label><select id="esi"><option value="winter">❄️ Зима</option><option value="spring">🌸 Весна</option><option value="summer">☀️ Літо</option><option value="autumn">🍂 Осінь</option></select></div>
+      <button class="submit" id="es-btn" onclick="submitEdit()">Зберегти зміни</button>
     </div>
 
     <!-- нова група -->
-    <div id="group-form" style="display:none">
-      <div class="field">
-        <label>Назва групи</label>
-        <input type="text" id="group-name-input" placeholder="Наприклад: Сімейні справи" maxlength="60">
-      </div>
-      <button class="btn-submit" id="group-submit-btn" onclick="submitGroup()">Створити групу</button>
+    <div id="f-group" style="display:none">
+      <div class="field"><label>Назва групи</label><input type="text" id="gi2" placeholder="Наприклад: Сімейні справи" maxlength="60"></div>
+      <button class="submit" id="gs-btn" onclick="submitGroup()">Створити групу</button>
     </div>
 
     <!-- групове завдання -->
-    <div id="group-task-form" style="display:none">
-      <div class="field">
-        <label>Назва завдання</label>
-        <input type="text" id="gtask-title-input" placeholder="Завдання для групи" maxlength="100">
-      </div>
-      <div class="field">
-        <label>Тип завдання</label>
-        <div class="type-grid">
-          <button class="type-btn active" onclick="selectGroupType('specific_date',this)"><span class="type-icon">📅</span>По даті</button>
-          <button class="type-btn"        onclick="selectGroupType('daily',this)">        <span class="type-icon">🔁</span>Щодня</button>
-          <button class="type-btn"        onclick="selectGroupType('seasonal',this)">     <span class="type-icon">🌿</span>Сезонне</button>
+    <div id="f-gtask" style="display:none">
+      <div class="field"><label>Назва</label><input type="text" id="gti" placeholder="Завдання для групи" maxlength="100"></div>
+      <div class="field"><label>Тип</label>
+        <div class="tgrid">
+          <button class="tbtn active" onclick="selGT('specific_date',this)"><span class="ti">📅</span>По даті</button>
+          <button class="tbtn"        onclick="selGT('daily',this)">        <span class="ti">🔁</span>Щодня</button>
+          <button class="tbtn"        onclick="selGT('seasonal',this)">     <span class="ti">🌿</span>Сезонне</button>
         </div>
       </div>
-      <div class="field" id="gdate-field"   style="display:none"><label>Дата</label><input type="date" id="gtask-date-input"></div>
-      <div class="field" id="gseason-field" style="display:none">
-        <label>Сезон</label>
-        <select id="gtask-season-input">
-          <option value="winter">❄️ Зима</option><option value="spring">🌸 Весна</option>
-          <option value="summer">☀️ Літо</option><option value="autumn">🍂 Осінь</option>
-        </select>
-      </div>
-      <button class="btn-submit" id="gtask-submit-btn" onclick="submitGroupTask()">Додати завдання</button>
+      <div class="field" id="gdf" style="display:none"><label>Дата</label><input type="date" id="gtdi"></div>
+      <div class="field" id="gsf" style="display:none"><label>Сезон</label><select id="gtsi"><option value="winter">❄️ Зима</option><option value="spring">🌸 Весна</option><option value="summer">☀️ Літо</option><option value="autumn">🍂 Осінь</option></select></div>
+      <button class="submit" id="gts-btn" onclick="submitGTask()">Додати завдання</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── СТАН ───────────────────────────────────────────────
 const tg = window.Telegram.WebApp;
-tg.expand();
-tg.enableClosingConfirmation();
+tg.expand(); tg.enableClosingConfirmation();
 
-let currentUserId    = null;
-let currentTab       = 'tasks';
-let currentFilter    = 'all';
-let allTasks         = [];
-let allGroups        = [];
-let selectedType     = 'specific_date';
-let selectedGType    = 'specific_date';
-let currentGroup     = null; // { id, name, isOwner }
+// ── стан ──────────────────────────────────────────────────
+let uid     = null;
+let tab     = 'tasks';
+let filter  = 'all';
+let tasks   = [];
+let groups  = [];
+let sType   = 'specific_date';
+let sGType  = 'specific_date';
+let curGrp  = null;  // {id, name, isOwner}
+let editId  = null;  // id завдання що редагується
 
-// ─── ЮЗЕР ───────────────────────────────────────────────
-const tgUser = tg.initDataUnsafe?.user;
-if (tgUser) {
-  document.getElementById('user-name').textContent = `Привіт, ${tgUser.first_name}!`;
-  const av = document.getElementById('user-avatar');
-  if (tgUser.photo_url) av.innerHTML = `<img src="${tgUser.photo_url}" alt="">`;
-  else av.textContent = tgUser.first_name[0].toUpperCase();
+// ── юзер ─────────────────────────────────────────────────
+const tgu = tg.initDataUnsafe?.user;
+if (tgu) {
+  document.getElementById('uname').textContent = `Привіт, ${tgu.first_name}!`;
+  const a = document.getElementById('av');
+  if (tgu.photo_url) a.innerHTML = `<img src="${tgu.photo_url}" alt="">`;
+  else a.textContent = tgu.first_name[0].toUpperCase();
 }
 
-// ─── API ────────────────────────────────────────────────
-async function api(method, path, body = null) {
-  const opts = {
+// ── api ───────────────────────────────────────────────────
+async function api(method, path, body) {
+  const r = await fetch(path, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(currentUserId ? { 'X-User-Id': String(currentUserId) } : {})
-    }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
-  }
-  return res.json();
+    headers: { 'Content-Type':'application/json', ...(uid ? {'X-User-Id': String(uid)} : {}) },
+    ...(body ? {body: JSON.stringify(body)} : {})
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${r.status}`); }
+  return r.json();
 }
 
-// ─── НАВІГАЦІЯ ──────────────────────────────────────────
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-}
-function goBack() {
-  currentGroup = null;
-  showScreen('main');
-}
+// ── навігація ─────────────────────────────────────────────
+function show(name) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+name).classList.add('active'); }
+function goBack()   { curGrp=null; show('main'); }
 
-// ─── ЛОГІН ──────────────────────────────────────────────
-async function login() {
+// ── логін ─────────────────────────────────────────────────
+async function init() {
   try {
-    const data = await api('POST', '/api/login', { initData: tg.initData });
-    currentUserId = data.user_id;
-    document.getElementById('status-dot').classList.add('ok');
-    document.getElementById('auth-status').textContent = '✅ Авторизовано';
-    await loadTasks();
-    await loadGroups();
-    // deep link — якщо відкрили через ?group=ID
-    const gParam = new URLSearchParams(window.location.search).get('group');
-    if (gParam) openGroupDetail(parseInt(gParam));
-  } catch (e) {
-    document.getElementById('auth-status').textContent = '❌ Помилка входу';
-  }
+    const d = await api('POST','/api/login',{initData: tg.initData});
+    uid = d.user_id;
+    document.getElementById('sdot').classList.add('ok');
+    document.getElementById('sstatus').textContent = '✅ Авторизовано';
+    await loadTasks(); await loadGroups();
+    const gp = new URLSearchParams(window.location.search).get('group');
+    if (gp) openGrp(parseInt(gp));
+  } catch { document.getElementById('sstatus').textContent = '❌ Помилка входу'; }
 }
 
-// ─── ОСОБИСТІ ЗАВДАННЯ ──────────────────────────────────
-async function loadTasks() {
-  allTasks = await api('GET', '/api/tasks').catch(() => []);
-  renderTasks();
-}
+// ── завдання ──────────────────────────────────────────────
+async function loadTasks() { tasks = await api('GET','/api/tasks').catch(()=>[]); renderTasks(); }
 
 function renderTasks() {
-  const list = document.getElementById('task-list');
-  let tasks = [...allTasks];
-  if (currentFilter === 'done')       tasks = tasks.filter(t => t.is_completed);
-  else if (currentFilter !== 'all')   tasks = tasks.filter(t => t.task_type === currentFilter && !t.is_completed);
-  else                                tasks = tasks.filter(t => !t.is_completed);
-
-  list.innerHTML = tasks.length
-    ? tasks.map((t,i) => taskCardHTML(t, i, false)).join('')
-    : `<div class="empty-state"><div class="empty-icon">📋</div><p>Тут поки порожньо</p></div>`;
+  const l = document.getElementById('task-list');
+  let ts = [...tasks];
+  if (filter==='done')       ts = ts.filter(t=>t.is_completed);
+  else if (filter!=='all')   ts = ts.filter(t=>t.task_type===filter && !t.is_completed);
+  else                       ts = ts.filter(t=>!t.is_completed);
+  l.innerHTML = ts.length ? ts.map((t,i)=>tCard(t,i,false)).join('') : emp('📋','Тут поки порожньо');
 }
 
 async function toggleTask(id) {
-  const t = allTasks.find(t => t.id === id);
-  if (!t || t.is_completed) return;
-  await api('PATCH', `/api/tasks/${id}/complete`).catch(e => tg.showAlert(e.message));
-  t.is_completed = true;
-  tg.HapticFeedback.impactOccurred('light');
-  renderTasks();
+  const t = tasks.find(t=>t.id===id); if (!t||t.is_completed) return;
+  await api('PATCH',`/api/tasks/${id}/complete`).catch(e=>tg.showAlert(e.message));
+  t.is_completed=true; tg.HapticFeedback.impactOccurred('light'); renderTasks();
 }
 
 async function submitTask() {
-  const title = document.getElementById('task-title-input').value.trim();
-  if (!title) return tg.showAlert('Введи назву завдання');
-  const btn = document.getElementById('task-submit-btn');
-  btn.disabled = true; btn.textContent = 'Зберігаємо...';
+  const title = document.getElementById('ti').value.trim(); if (!title) return tg.showAlert('Введи назву');
+  setBtnLoading('ts-btn','Зберігаємо...');
   try {
-    await api('POST', '/api/tasks', {
-      title, task_type: selectedType,
-      due_date: selectedType === 'specific_date' ? (document.getElementById('task-date-input').value || null) : null,
-      season:   selectedType === 'seasonal'      ? document.getElementById('task-season-input').value : null,
-    });
-    tg.HapticFeedback.notificationOccurred('success');
-    closeModal(); await loadTasks();
+    await api('POST','/api/tasks',{title, task_type:sType,
+      due_date: sType==='specific_date'?(document.getElementById('tdi').value||null):null,
+      season:   sType==='seasonal'?document.getElementById('tsi').value:null});
+    tg.HapticFeedback.notificationOccurred('success'); closeModal(); await loadTasks();
   } catch(e) { tg.showAlert(e.message); }
-  finally { btn.disabled = false; btn.textContent = 'Додати завдання'; }
+  finally { resetBtn('ts-btn','Додати завдання'); }
 }
 
-// ─── ГРУПИ — СПИСОК ─────────────────────────────────────
-async function loadGroups() {
-  allGroups = await api('GET', '/api/groups').catch(() => []);
-  renderGroups();
+function openEditModal(t) {
+  editId = t.id;
+  document.getElementById('mtitle').textContent  = 'Редагувати завдання';
+  show4('f-edit');
+  document.getElementById('ei').value  = t.title;
+  const isDate   = t.task_type === 'specific_date';
+  const isSeason = t.task_type === 'seasonal';
+  document.getElementById('edf').style.display  = isDate   ? '' : 'none';
+  document.getElementById('esf').style.display  = isSeason ? '' : 'none';
+  if (isDate && t.due_date)   document.getElementById('edi').value = t.due_date.split('T')[0];
+  if (isSeason && t.season)   document.getElementById('esi').value = t.season;
+  openModal(); setTimeout(()=>document.getElementById('ei').focus(),350);
 }
 
-function renderGroups() {
-  const list = document.getElementById('group-list');
-  list.innerHTML = allGroups.length
-    ? allGroups.map((g,i) => `
-        <div class="group-card" style="animation-delay:${i*.04}s" onclick="openGroupDetail(${g.id})">
-          <div class="group-icon">👥</div>
-          <div class="group-info">
-            <div class="group-name">${escHtml(g.name)}</div>
-            <div class="group-meta">Натисни для керування</div>
-          </div>
-          <div class="group-arrow">›</div>
-        </div>`).join('')
-    : `<div class="empty-state"><div class="empty-icon">👥</div><p>Груп поки немає</p></div>`;
-}
-
-async function submitGroup() {
-  const name = document.getElementById('group-name-input').value.trim();
-  if (!name) return tg.showAlert('Введи назву групи');
-  const btn = document.getElementById('group-submit-btn');
-  btn.disabled = true; btn.textContent = 'Створюємо...';
+async function submitEdit() {
+  const title = document.getElementById('ei').value.trim(); if (!title) return tg.showAlert('Введи назву');
+  setBtnLoading('es-btn','Зберігаємо...');
   try {
-    await api('POST', '/api/groups', { name });
-    tg.HapticFeedback.notificationOccurred('success');
-    closeModal(); await loadGroups();
+    const body = {title};
+    const edf  = document.getElementById('edf');
+    if (edf.style.display!=='none') body.due_date = document.getElementById('edi').value||null;
+    const esf  = document.getElementById('esf');
+    if (esf.style.display!=='none') body.season   = document.getElementById('esi').value;
+    await api('PATCH',`/api/tasks/${editId}`,body);
+    tg.HapticFeedback.notificationOccurred('success'); closeModal(); await loadTasks();
   } catch(e) { tg.showAlert(e.message); }
-  finally { btn.disabled = false; btn.textContent = 'Створити групу'; }
+  finally { resetBtn('es-btn','Зберегти зміни'); }
 }
 
-// ─── ГРУПА — ДЕТАЛЬНИЙ ЕКРАН ─────────────────────────────
-async function openGroupDetail(groupId) {
-  try {
-    const data = await api('GET', `/api/groups/${groupId}/members`);
-    // Власник — той хто має групу в allGroups (вони завантажуються через GET /api/groups де owner_id = currentUserId)
-    const isOwner = allGroups.some(g => g.id === groupId);
-
-    currentGroup = { id: groupId, name: data.name, isOwner };
-
-    document.getElementById('gd-name').textContent = data.name;
-    document.getElementById('gd-meta').textContent =
-      `${data.members.length} учасн. • ${isOwner ? 'Ви власник' : 'Учасник'}`;
-    document.getElementById('group-fab').style.display = isOwner ? 'flex' : 'none';
-
-    renderMembers(data.members);
-    await loadGroupTasks(groupId);
-    showScreen('group');
-  } catch(e) { tg.showAlert('Помилка: ' + e.message); }
-}
-
-function renderMembers(members) {
-  const list = document.getElementById('member-list');
-  if (!members.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div><p>Учасників поки немає</p></div>`;
-    return;
-  }
-  list.innerHTML = members.map((m, i) => {
-    const isOwnerRow = m.role === 'owner';
-    const canRemove  = currentGroup?.isOwner && !isOwnerRow;
-    return `
-      <div class="member-card" style="animation-delay:${i*.04}s">
-        <div class="member-avatar">${m.first_name[0].toUpperCase()}</div>
-        <div class="member-info">
-          <div class="member-name">${escHtml(m.first_name)}</div>
-          <div class="member-username">${m.username ? '@'+escHtml(m.username) : 'без username'}</div>
-        </div>
-        <span class="member-role ${isOwnerRow ? 'role-owner' : 'role-member'}">
-          ${isOwnerRow ? '👑 Власник' : 'Учасник'}
-        </span>
-        ${canRemove ? `
-          <button class="btn-remove" onclick="removeMember(${m.user_id},'${escHtml(m.first_name)}')">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </button>` : ''}
-      </div>`;
-  }).join('');
-}
-
-async function removeMember(memberId, name) {
-  tg.showPopup({
-    title: 'Видалити учасника',
-    message: `Видалити ${name} з групи?`,
-    buttons: [
-      { id: 'yes', type: 'destructive', text: 'Видалити' },
-      { id: 'no',  type: 'cancel' },
-    ]
-  }, async (btnId) => {
-    if (btnId !== 'yes') return;
+async function deleteTask(id, inGroup) {
+  tg.showPopup({title:'Видалити завдання',message:'Ти впевнений?',buttons:[{id:'y',type:'destructive',text:'Видалити'},{id:'n',type:'cancel'}]},async btn=>{
+    if (btn!=='y') return;
     try {
-      await api('DELETE', `/api/groups/${currentGroup.id}/members/${memberId}`);
+      await api('DELETE',`/api/tasks/${id}`);
       tg.HapticFeedback.notificationOccurred('success');
-      await openGroupDetail(currentGroup.id);
+      if (inGroup) await loadGTasks(curGrp.id);
+      else await loadTasks();
     } catch(e) { tg.showAlert(e.message); }
   });
 }
 
-// ─── ГРУПОВІ ЗАВДАННЯ ────────────────────────────────────
-async function loadGroupTasks(groupId) {
-  const tasks = await api('GET', `/api/groups/${groupId}/tasks`).catch(() => []);
-  const list  = document.getElementById('group-task-list');
-  list.innerHTML = tasks.length
-    ? tasks.map((t,i) => taskCardHTML(t, i, true)).join('')
-    : `<div class="empty-state"><div class="empty-icon">📋</div><p>Завдань поки немає</p></div>`;
+// ── групи ─────────────────────────────────────────────────
+async function loadGroups() { groups = await api('GET','/api/groups').catch(()=>[]); renderGroups(); }
+
+function renderGroups() {
+  const l = document.getElementById('group-list');
+  l.innerHTML = groups.length ? groups.map((g,i)=>`
+    <div class="gc" style="animation-delay:${i*.04}s" onclick="openGrp(${g.id})">
+      <div class="gi ${g.role==='owner'?'own':'mem'}">${g.role==='owner'?'👥':'👁'}</div>
+      <div class="ginfo">
+        <div class="gname">${esc(g.name)}</div>
+        <div class="gmeta">${g.role==='owner'?'Власник':'Учасник'} • Натисни для перегляду</div>
+      </div>
+      <div class="garr">›</div>
+    </div>`).join('') : emp('👥','Груп поки немає');
 }
 
-async function toggleGroupTask(id) {
-  await api('PATCH', `/api/tasks/${id}/complete`).catch(e => tg.showAlert(e.message));
-  tg.HapticFeedback.impactOccurred('light');
-  await loadGroupTasks(currentGroup.id);
-}
-
-async function submitGroupTask() {
-  const title = document.getElementById('gtask-title-input').value.trim();
-  if (!title) return tg.showAlert('Введи назву завдання');
-  const btn = document.getElementById('gtask-submit-btn');
-  btn.disabled = true; btn.textContent = 'Зберігаємо...';
+async function submitGroup() {
+  const name = document.getElementById('gi2').value.trim(); if (!name) return tg.showAlert('Введи назву');
+  setBtnLoading('gs-btn','Створюємо...');
   try {
-    await api('POST', `/api/groups/${currentGroup.id}/tasks`, {
-      title, task_type: selectedGType,
-      due_date: selectedGType === 'specific_date' ? (document.getElementById('gtask-date-input').value || null) : null,
-      season:   selectedGType === 'seasonal'      ? document.getElementById('gtask-season-input').value : null,
-    });
-    tg.HapticFeedback.notificationOccurred('success');
-    closeModal(); await loadGroupTasks(currentGroup.id);
+    await api('POST','/api/groups',{name});
+    tg.HapticFeedback.notificationOccurred('success'); closeModal(); await loadGroups();
   } catch(e) { tg.showAlert(e.message); }
-  finally { btn.disabled = false; btn.textContent = 'Додати завдання'; }
+  finally { resetBtn('gs-btn','Створити групу'); }
 }
 
-// ─── ЗАПРОСИТИ В ГРУПУ ───────────────────────────────────
-function shareCurrentGroup() {
-  if (!currentGroup) return;
-  const botUsername = 'your_planner_bot'; // ← заміни на свій!
-  const link = `https://t.me/${botUsername}?start=group_${currentGroup.id}`;
+async function deleteGroup() {
   tg.showPopup({
-    title: currentGroup.name,
-    message: 'Поділись посиланням щоб додати учасника:',
-    buttons: [
-      { id: 'share', type: 'default',     text: '📤 Поділитись' },
-      { id: 'copy',  type: 'default',     text: '📋 Скопіювати' },
-      { id: 'close', type: 'destructive', text: 'Закрити' },
-    ]
-  }, (btnId) => {
-    if (btnId === 'share') {
-      tg.openTelegramLink(
-        `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(`Приєднуйся до групи "${currentGroup.name}"`)}`
-      );
-    } else if (btnId === 'copy') {
-      navigator.clipboard.writeText(link).then(() => tg.showAlert('✅ Посилання скопійовано!'));
-    }
+    title:'Видалити групу',
+    message:`Видалити групу «${curGrp.name}»? Всі завдання та учасники будуть видалені.`,
+    buttons:[{id:'y',type:'destructive',text:'Видалити'},{id:'n',type:'cancel'}]
+  }, async btn=>{
+    if (btn!=='y') return;
+    try {
+      await api('DELETE',`/api/groups/${curGrp.id}`);
+      tg.HapticFeedback.notificationOccurred('success');
+      await loadGroups(); goBack();
+    } catch(e) { tg.showAlert(e.message); }
   });
 }
 
-// ─── UI HELPERS ──────────────────────────────────────────
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('tab-tasks').classList.toggle('active',  tab === 'tasks');
-  document.getElementById('tab-groups').classList.toggle('active', tab === 'groups');
-  document.getElementById('section-tasks').style.display  = tab === 'tasks'  ? '' : 'none';
-  document.getElementById('section-groups').style.display = tab === 'groups' ? '' : 'none';
-  document.getElementById('filters').style.display        = tab === 'tasks'  ? 'flex' : 'none';
-  const fab = document.getElementById('main-fab');
-  const lbl = document.getElementById('fab-label');
-  if (tab === 'groups') { fab.classList.add('purple');    lbl.textContent = 'Нова група'; }
-  else                  { fab.classList.remove('purple'); lbl.textContent = 'Нове завдання'; }
+// ── група — детальний екран ────────────────────────────────
+async function openGrp(gid) {
+  try {
+    const d = await api('GET',`/api/groups/${gid}/members`);
+    const isOwner = groups.some(g=>g.id===gid && g.role==='owner');
+    curGrp = {id:gid, name:d.name, isOwner};
+
+    document.getElementById('gd-name').textContent = d.name;
+    document.getElementById('gd-meta').textContent = `${d.members.length} учасн. • ${isOwner?'Ви власник':'Учасник'}`;
+    document.getElementById('gfab').style.display      = isOwner ? 'flex' : 'none';
+    document.getElementById('btn-del-grp').style.display = isOwner ? 'flex' : 'none';
+
+    renderMembers(d.members);
+    await loadGTasks(gid);
+    show('group');
+  } catch(e) { tg.showAlert('Помилка: '+e.message); }
 }
 
-function setFilter(f, el) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active'); renderTasks();
+function renderMembers(members) {
+  const l = document.getElementById('member-list');
+  l.innerHTML = members.length ? members.map((m,i)=>{
+    const isO = m.role==='owner';
+    const canR = curGrp?.isOwner && !isO;
+    return `<div class="mc" style="animation-delay:${i*.04}s">
+      <div class="mav">${m.first_name[0].toUpperCase()}</div>
+      <div class="mi"><div class="mn">${esc(m.first_name)}</div><div class="mu">${m.username?'@'+esc(m.username):'без username'}</div></div>
+      <span class="mrole ${isO?'ro':'rm'}">${isO?'👑 Власник':'Учасник'}</span>
+      ${canR?`<button class="rem-btn" onclick="removeMember(${m.user_id},'${esc(m.first_name)}')"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>`:''}
+    </div>`;
+  }).join('') : emp('👤','Учасників поки немає');
 }
+
+async function removeMember(mid, name) {
+  tg.showPopup({title:'Видалити учасника',message:`Видалити ${name} з групи?`,buttons:[{id:'y',type:'destructive',text:'Видалити'},{id:'n',type:'cancel'}]},async btn=>{
+    if (btn!=='y') return;
+    try { await api('DELETE',`/api/groups/${curGrp.id}/members/${mid}`); tg.HapticFeedback.notificationOccurred('success'); await openGrp(curGrp.id); }
+    catch(e) { tg.showAlert(e.message); }
+  });
+}
+
+async function loadGTasks(gid) {
+  const ts = await api('GET',`/api/groups/${gid}/tasks`).catch(()=>[]);
+  document.getElementById('gtask-list').innerHTML = ts.length ? ts.map((t,i)=>tCard(t,i,true)).join('') : emp('📋','Завдань поки немає');
+}
+
+async function toggleGTask(id) {
+  await api('PATCH',`/api/tasks/${id}/complete`).catch(e=>tg.showAlert(e.message));
+  tg.HapticFeedback.impactOccurred('light'); await loadGTasks(curGrp.id);
+}
+
+async function submitGTask() {
+  const title = document.getElementById('gti').value.trim(); if (!title) return tg.showAlert('Введи назву');
+  setBtnLoading('gts-btn','Зберігаємо...');
+  try {
+    await api('POST',`/api/groups/${curGrp.id}/tasks`,{title,task_type:sGType,
+      due_date: sGType==='specific_date'?(document.getElementById('gtdi').value||null):null,
+      season:   sGType==='seasonal'?document.getElementById('gtsi').value:null});
+    tg.HapticFeedback.notificationOccurred('success'); closeModal(); await loadGTasks(curGrp.id);
+  } catch(e) { tg.showAlert(e.message); }
+  finally { resetBtn('gts-btn','Додати завдання'); }
+}
+
+// ── share ─────────────────────────────────────────────────
+function shareGrp() {
+  if (!curGrp) return;
+  const bot  = 'your_bot_username'; // ← заміни!
+  const link = `https://t.me/${bot}?start=group_${curGrp.id}`;
+  tg.showPopup({title:curGrp.name,message:'Поділись посиланням щоб додати учасника:',buttons:[{id:'s',type:'default',text:'📤 Поділитись'},{id:'c',type:'default',text:'📋 Скопіювати'},{id:'x',type:'destructive',text:'Закрити'}]},(b)=>{
+    if (b==='s') tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(`Приєднуйся до групи "${curGrp.name}"`)}`);
+    if (b==='c') navigator.clipboard.writeText(link).then(()=>tg.showAlert('✅ Скопійовано!'));
+  });
+}
+
+// ── UI helpers ────────────────────────────────────────────
+function switchTab(t) {
+  tab = t;
+  document.getElementById('tab-t').classList.toggle('active', t==='tasks');
+  document.getElementById('tab-g').classList.toggle('active', t==='groups');
+  document.getElementById('sec-tasks').style.display  = t==='tasks'  ? '' : 'none';
+  document.getElementById('sec-groups').style.display = t==='groups' ? '' : 'none';
+  document.getElementById('filters').style.display    = t==='tasks'  ? 'flex' : 'none';
+  const f = document.getElementById('mfab'), l = document.getElementById('flbl');
+  if (t==='groups') { f.classList.add('v2');    l.textContent='Нова група'; }
+  else              { f.classList.remove('v2'); l.textContent='Нове завдання'; }
+}
+function setF(f, el) { filter=f; document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderTasks(); }
 
 function openMainModal() {
-  const g = currentTab === 'groups';
-  document.getElementById('modal-title').textContent       = g ? 'Нова група' : 'Нове завдання';
-  document.getElementById('task-form').style.display       = g ? 'none' : '';
-  document.getElementById('group-form').style.display      = g ? '' : 'none';
-  document.getElementById('group-task-form').style.display = 'none';
-  document.getElementById('task-title-input').value  = '';
-  document.getElementById('group-name-input').value  = '';
-  selectType('specific_date', document.querySelector('#task-form .type-btn'));
+  const g = tab==='groups';
+  document.getElementById('mtitle').textContent = g?'Нова група':'Нове завдання';
+  show4(g?'f-group':'f-task');
+  if (!g) { document.getElementById('ti').value=''; selT('specific_date',document.querySelector('#f-task .tbtn')); }
+  else    { document.getElementById('gi2').value=''; }
   openModal();
-  setTimeout(() => (g
-    ? document.getElementById('group-name-input')
-    : document.getElementById('task-title-input')
-  ).focus(), 350);
+  setTimeout(()=>(g?document.getElementById('gi2'):document.getElementById('ti')).focus(),350);
+}
+function openGTaskModal() {
+  document.getElementById('mtitle').textContent='Нове завдання групи';
+  show4('f-gtask'); document.getElementById('gti').value='';
+  selGT('specific_date',document.querySelector('#f-gtask .tbtn'));
+  openModal(); setTimeout(()=>document.getElementById('gti').focus(),350);
+}
+function show4(id) { ['f-task','f-edit','f-group','f-gtask'].forEach(i=>document.getElementById(i).style.display=i===id?'':'none'); }
+function openModal()  { document.getElementById('mo').classList.add('open'); tg.HapticFeedback.impactOccurred('medium'); }
+function closeModal() { document.getElementById('mo').classList.remove('open'); }
+function outsideClose(e) { if (e.target===document.getElementById('mo')) closeModal(); }
+
+function selT(t, el) {
+  sType=t; document.querySelectorAll('#f-task .tbtn').forEach(b=>b.classList.remove('active')); el.classList.add('active');
+  document.getElementById('df').style.display = t==='specific_date'?'':'none';
+  document.getElementById('sf').style.display = t==='seasonal'?'':'none';
+}
+function selGT(t, el) {
+  sGType=t; document.querySelectorAll('#f-gtask .tbtn').forEach(b=>b.classList.remove('active')); el.classList.add('active');
+  document.getElementById('gdf').style.display = t==='specific_date'?'':'none';
+  document.getElementById('gsf').style.display = t==='seasonal'?'':'none';
 }
 
-function openGroupTaskModal() {
-  document.getElementById('modal-title').textContent       = 'Нове завдання групи';
-  document.getElementById('task-form').style.display       = 'none';
-  document.getElementById('group-form').style.display      = 'none';
-  document.getElementById('group-task-form').style.display = '';
-  document.getElementById('gtask-title-input').value = '';
-  selectGroupType('specific_date', document.querySelector('#group-task-form .type-btn'));
-  openModal();
-  setTimeout(() => document.getElementById('gtask-title-input').focus(), 350);
-}
+function setBtnLoading(id, txt) { const b=document.getElementById(id); b.disabled=true; b.textContent=txt; }
+function resetBtn(id, txt)      { const b=document.getElementById(id); b.disabled=false; b.textContent=txt; }
 
-function openModal()  { document.getElementById('modal-overlay').classList.add('open'); tg.HapticFeedback.impactOccurred('medium'); }
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
-function closeModalOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
-
-function selectType(type, el) {
-  selectedType = type;
-  document.querySelectorAll('#task-form .type-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('date-field').style.display   = type === 'specific_date' ? '' : 'none';
-  document.getElementById('season-field').style.display = type === 'seasonal' ? '' : 'none';
-}
-
-function selectGroupType(type, el) {
-  selectedGType = type;
-  document.querySelectorAll('#group-task-form .type-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('gdate-field').style.display   = type === 'specific_date' ? '' : 'none';
-  document.getElementById('gseason-field').style.display = type === 'seasonal' ? '' : 'none';
-}
-
-function taskCardHTML(t, i, isGroup) {
-  const badge = { daily:'<span class="task-badge badge-daily">🔁 Щодня</span>', specific_date:'<span class="task-badge badge-date">📅 По даті</span>', seasonal:'<span class="task-badge badge-seasonal">🌿 Сезон</span>' }[t.task_type] || '';
+// ── рендер картки завдання ────────────────────────────────
+function tCard(t, i, isG) {
+  const badge = {daily:`<span class="badge bd">🔁 Щодня</span>`,specific_date:`<span class="badge bdate">📅 По даті</span>`,seasonal:`<span class="badge bs">🌿 Сезон</span>`}[t.task_type]||'';
   const meta  = t.due_date ? new Date(t.due_date).toLocaleDateString('uk-UA',{day:'numeric',month:'short'}) : (t.season||'');
-  return `
-    <div class="task-card ${t.is_completed?'done':''}" style="animation-delay:${i*.04}s"
-         onclick="${isGroup?`toggleGroupTask(${t.id})`:`toggleTask(${t.id})`}">
-      <div class="task-check">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="task-body">
-        <div class="task-title">${escHtml(t.title)}</div>
-        <div class="task-meta">${badge}${meta?`<span>${meta}</span>`:''}</div>
-      </div>
-    </div>`;
+  const canEdit   = isG ? curGrp?.isOwner : true;
+  const canDelete = isG ? curGrp?.isOwner : true;
+  const toggle    = isG ? `toggleGTask(${t.id})` : `toggleTask(${t.id})`;
+  const editFn    = isG ? '' : `openEditModal(${JSON.stringify(t).replace(/"/g,'&quot;')})`;
+  const delFn     = `deleteTask(${t.id},${isG})`;
+
+  return `<div class="tc ${t.is_completed?'done':''}" style="animation-delay:${i*.04}s">
+    <div class="chk" onclick="${toggle}">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="tb" onclick="${toggle}">
+      <div class="tt">${esc(t.title)}</div>
+      <div class="tm">${badge}${meta?`<span>${meta}</span>`:''}</div>
+    </div>
+    ${!t.is_completed ? `<div class="ta">
+      ${canEdit && !isG ? `<button class="icon-btn edit" onclick="event.stopPropagation();${editFn}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}
+      ${canDelete ? `<button class="icon-btn del" onclick="event.stopPropagation();${delFn}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.8 7.5h6.4L11 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}
+    </div>` : ''}
+  </div>`;
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function emp(icon, txt) { return `<div class="empty"><div class="ei">${icon}</div><p>${txt}</p></div>`; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-['task-title-input','group-name-input','gtask-title-input'].forEach((id, i) => {
-  const fns = [submitTask, submitGroup, submitGroupTask];
-  document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') fns[i](); });
+// enter
+[['ti',submitTask],['gi2',submitGroup],['gti',submitGTask],['ei',submitEdit]].forEach(([id,fn])=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') fn(); });
 });
 
-login();
+init();
 </script>
 </body>
 </html>
