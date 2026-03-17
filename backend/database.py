@@ -40,3 +40,11 @@ class Task(Base):
     is_completed = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.telegram_id"), nullable=True)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    
+class GroupMember(Base):
+    __tablename__ = "group_members"
+    id       = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    user_id  = Column(Integer, ForeignKey("users.telegram_id"), nullable=False)
+    role     = Column(String, default="member")  # "owner" | "member"
+    joined_at = Column(DateTime, default=datetime.utcnow)
