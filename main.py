@@ -18,7 +18,7 @@ from sqlalchemy.future import select
 
 from pydantic import BaseModel
 
-from backend.database import engine, Base, AsyncSessionLocal, Task, User, Group, TaskType
+from backend.database import engine, Base, AsyncSessionLocal, Task, User, Group, GroupMember, TaskType
 from backend.auth import validate_telegram_data, BOT_TOKEN
 
 
