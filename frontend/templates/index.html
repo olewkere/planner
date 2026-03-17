@@ -661,7 +661,7 @@ async function submitGroupTask() {
 // ─── ЗАПРОСИТИ В ГРУПУ ───────────────────────────────────
 function shareCurrentGroup() {
   if (!currentGroup) return;
-  const botUsername = 'your_bot_username'; // ← заміни на свій!
+  const botUsername = 'your_planner_bot'; // ← заміни на свій!
   const link = `https://t.me/${botUsername}?start=group_${currentGroup.id}`;
   tg.showPopup({
     title: currentGroup.name,
