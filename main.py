@@ -17,99 +17,75 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from pydantic import BaseModel
+from typing import Optional
 
 from backend.database import engine, Base, AsyncSessionLocal, Task, User, Group, GroupMember, TaskType
 from backend.auth import validate_telegram_data, BOT_TOKEN
 
-
-# ── Ініціалізація ──────────────────────────────────────────────────────────
 
 bot       = Bot(token=BOT_TOKEN)
 dp        = Dispatcher()
 scheduler = AsyncIOScheduler()
 
 
-# ── Lifespan (startup / shutdown) ─────────────────────────────────────────
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # STARTUP
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
     bot_task = asyncio.create_task(dp.start_polling(bot))
-
     scheduler.add_job(send_reminders, "cron", hour=8,  minute=0)
     scheduler.add_job(send_reminders, "cron", hour=13, minute=0)
     scheduler.add_job(send_reminders, "cron", hour=19, minute=0)
     scheduler.start()
-
-    yield  # сервер працює тут
-
-    # SHUTDOWN
+    yield
     bot_task.cancel()
     scheduler.shutdown()
     await bot.session.close()
 
 
-# ── FastAPI app ────────────────────────────────────────────────────────────
-
 app       = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="frontend/templates")
 
-
-# ── DB dependency ──────────────────────────────────────────────────────────
 
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
 
 
-# ── Pydantic schemas ───────────────────────────────────────────────────────
-
 class GroupCreate(BaseModel):
     name: str
 
 class TaskCreate(BaseModel):
-    title: str
-    task_type: str  = "specific_date"  # "daily" | "specific_date" | "seasonal"
-    due_date:  str  | None = None      # ISO-рядок "2025-12-31"
-    season:    str  | None = None      # "winter" | "spring" | "summer" | "autumn"
-    group_id:  int  | None = None
+    title:     str
+    task_type: str           = "specific_date"
+    due_date:  Optional[str] = None
+    season:    Optional[str] = None
+    group_id:  Optional[int] = None
 
+class TaskUpdate(BaseModel):
+    title:    Optional[str] = None
+    due_date: Optional[str] = None
+    season:   Optional[str] = None
 
-# ── Helper ─────────────────────────────────────────────────────────────────
 
 def require_user(request: Request) -> int:
-    """Дістає user_id з заголовка X-User-Id або кидає 401."""
     uid = request.headers.get("X-User-Id")
     if not uid:
         raise HTTPException(status_code=401, detail="Не авторизовано")
     return int(uid)
 
 
-# ── Routes ─────────────────────────────────────────────────────────────────
-
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-# ── AUTH ───────────────────────────────────────────────────────────────────
-
 @app.post("/api/login")
 async def login_via_telegram(request: Request, db: AsyncSession = Depends(get_db)):
-    """
-    Авторизація через Telegram initData.
-    Повертає user_id — фронтенд зберігає його і передає
-    у заголовку X-User-Id при кожному наступному запиті.
-    """
     data      = await request.json()
     user_data = validate_telegram_data(data.get("initData", ""))
-
     if not user_data:
         raise HTTPException(status_code=401, detail="Невалідні дані Telegram")
-
     user = User(
         telegram_id=user_data["id"],
         username=user_data.get("username"),
@@ -117,22 +93,11 @@ async def login_via_telegram(request: Request, db: AsyncSession = Depends(get_db
     )
     await db.merge(user)
     await db.commit()
+    return {"status": "ok", "user_id": user_data["id"], "first_name": user_data.get("first_name", "")}
 
-    return {
-        "status":     "ok",
-        "user_id":    user_data["id"],
-        "first_name": user_data.get("first_name", ""),
-    }
-
-
-# ── GROUPS ─────────────────────────────────────────────────────────────────
 
 @app.post("/api/groups")
-async def create_group(
-    group:   GroupCreate,
-    request: Request,
-    db:      AsyncSession = Depends(get_db),
-):
+async def create_group(group: GroupCreate, request: Request, db: AsyncSession = Depends(get_db)):
     user_id   = require_user(request)
     new_group = Group(name=group.name, owner_id=user_id)
     db.add(new_group)
@@ -143,201 +108,171 @@ async def create_group(
 
 @app.get("/api/groups")
 async def get_groups(request: Request, db: AsyncSession = Depends(get_db)):
-    """Повертає всі групи де поточний юзер є власником."""
+    """
+    Повертає ВСІ групи юзера:
+    - де він власник (role: owner)
+    - де він учасник (role: member)
+    ВИПРАВЛЕННЯ: раніше поверталися тільки власні групи
+    """
     user_id = require_user(request)
-    result  = await db.execute(
-        select(Group).where(Group.owner_id == user_id)
-    )
-    groups = result.scalars().all()
-    return [{"id": g.id, "name": g.name} for g in groups]
 
-# ── GROUP MEMBERS ──────────────────────────────────────────────────────────
+    # Групи де власник
+    owned_res    = await db.execute(select(Group).where(Group.owner_id == user_id))
+    owned_groups = owned_res.scalars().all()
+    owned_ids    = {g.id for g in owned_groups}
+
+    # Групи де учасник
+    member_res     = await db.execute(select(GroupMember).where(GroupMember.user_id == user_id))
+    member_entries = member_res.scalars().all()
+    joined_ids     = [m.group_id for m in member_entries if m.group_id not in owned_ids]
+
+    joined_groups = []
+    if joined_ids:
+        jres          = await db.execute(select(Group).where(Group.id.in_(joined_ids)))
+        joined_groups = jres.scalars().all()
+
+    result = []
+    for g in owned_groups:
+        result.append({"id": g.id, "name": g.name, "role": "owner"})
+    for g in joined_groups:
+        result.append({"id": g.id, "name": g.name, "role": "member"})
+    return result
+
+
+@app.delete("/api/groups/{group_id}")
+async def delete_group(group_id: int, request: Request, db: AsyncSession = Depends(get_db)):
+    """Видалити групу разом з учасниками та завданнями — тільки власник."""
+    user_id = require_user(request)
+
+    res   = await db.execute(select(Group).where(Group.id == group_id, Group.owner_id == user_id))
+    group = res.scalar_one_or_none()
+    if not group:
+        raise HTTPException(status_code=403, detail="Тільки власник може видалити групу")
+
+    # Видаляємо учасників
+    m_res = await db.execute(select(GroupMember).where(GroupMember.group_id == group_id))
+    for m in m_res.scalars().all():
+        await db.delete(m)
+
+    # Видаляємо завдання групи
+    t_res = await db.execute(select(Task).where(Task.group_id == group_id))
+    for t in t_res.scalars().all():
+        await db.delete(t)
+
+    await db.delete(group)
+    await db.commit()
+    return {"message": "Групу видалено"}
+
 
 @app.get("/api/groups/{group_id}/members")
-async def get_group_members(
-    group_id: int,
-    request:  Request,
-    db:       AsyncSession = Depends(get_db),
-):
-    """Список учасників групи."""
+async def get_group_members(group_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = require_user(request)
 
-    # Перевіряємо що юзер є власником або учасником
-    result = await db.execute(
-        select(Group).where(Group.id == group_id)
-    )
-    group = result.scalar_one_or_none()
+    res   = await db.execute(select(Group).where(Group.id == group_id))
+    group = res.scalar_one_or_none()
     if not group:
         raise HTTPException(status_code=404, detail="Групу не знайдено")
 
-    result = await db.execute(
+    # Перевіряємо доступ
+    is_owner = group.owner_id == user_id
+    if not is_owner:
+        mc = await db.execute(
+            select(GroupMember).where(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+        )
+        if not mc.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Немає доступу")
+
+    rows = await db.execute(
         select(GroupMember, User)
         .join(User, User.telegram_id == GroupMember.user_id)
         .where(GroupMember.group_id == group_id)
     )
-    rows = result.all()
-
+    # ВИПРАВЛЕННЯ: фільтруємо власника зі списку учасників щоб не дублювався
     members = [
-        {
-            "user_id":    r.User.telegram_id,
-            "first_name": r.User.first_name,
-            "username":   r.User.username,
-            "role":       r.GroupMember.role,
-        }
-        for r in rows
+        {"user_id": r.User.telegram_id, "first_name": r.User.first_name,
+         "username": r.User.username, "role": r.GroupMember.role}
+        for r in rows.all()
+        if r.User.telegram_id != group.owner_id  # власник буде доданий окремо нижче
     ]
 
-    # Власник теж відображається
-    owner_result = await db.execute(
-        select(User).where(User.telegram_id == group.owner_id)
-    )
-    owner = owner_result.scalar_one_or_none()
+    owner_res = await db.execute(select(User).where(User.telegram_id == group.owner_id))
+    owner     = owner_res.scalar_one_or_none()
     if owner:
         members.insert(0, {
-            "user_id":    owner.telegram_id,
-            "first_name": owner.first_name,
-            "username":   owner.username,
-            "role":       "owner",
+            "user_id": owner.telegram_id, "first_name": owner.first_name,
+            "username": owner.username, "role": "owner",
         })
 
     return {"group_id": group_id, "name": group.name, "members": members}
 
 
 @app.delete("/api/groups/{group_id}/members/{member_id}")
-async def remove_member(
-    group_id:  int,
-    member_id: int,
-    request:   Request,
-    db:        AsyncSession = Depends(get_db),
-):
-    """Видалити учасника (тільки власник може)."""
+async def remove_member(group_id: int, member_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = require_user(request)
-
-    result = await db.execute(
-        select(Group).where(Group.id == group_id, Group.owner_id == user_id)
-    )
-    group = result.scalar_one_or_none()
-    if not group:
+    res = await db.execute(select(Group).where(Group.id == group_id, Group.owner_id == user_id))
+    if not res.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Тільки власник може видаляти учасників")
-
-    result = await db.execute(
-        select(GroupMember).where(
-            GroupMember.group_id == group_id,
-            GroupMember.user_id == member_id,
-        )
+    res = await db.execute(
+        select(GroupMember).where(GroupMember.group_id == group_id, GroupMember.user_id == member_id)
     )
-    member = result.scalar_one_or_none()
+    member = res.scalar_one_or_none()
     if not member:
         raise HTTPException(status_code=404, detail="Учасника не знайдено")
-
     await db.delete(member)
     await db.commit()
     return {"message": "Учасника видалено"}
 
 
-# ── GROUP TASKS ────────────────────────────────────────────────────────────
-
 @app.post("/api/groups/{group_id}/tasks")
-async def create_group_task(
-    group_id: int,
-    task:     TaskCreate,
-    request:  Request,
-    db:       AsyncSession = Depends(get_db),
-):
-    """Створити завдання для групи (тільки власник)."""
+async def create_group_task(group_id: int, task: TaskCreate, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = require_user(request)
-
-    result = await db.execute(
-        select(Group).where(Group.id == group_id, Group.owner_id == user_id)
-    )
-    group = result.scalar_one_or_none()
-    if not group:
-        raise HTTPException(status_code=403, detail="Тільки власник може створювати групові завдання")
-
+    res = await db.execute(select(Group).where(Group.id == group_id, Group.owner_id == user_id))
+    if not res.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Тільки власник може створювати завдання")
     due_date = datetime.fromisoformat(task.due_date) if task.due_date else None
-
     try:
-        task_type_enum = TaskType(task.task_type)
+        tt = TaskType(task.task_type)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Невідомий task_type: {task.task_type}")
-
-    new_task = Task(
-        title=task.title,
-        task_type=task_type_enum,
-        due_date=due_date,
-        season=task.season,
-        user_id=None,       # групове завдання не належить конкретному юзеру
-        group_id=group_id,
-    )
+    new_task = Task(title=task.title, task_type=tt, due_date=due_date, season=task.season, user_id=None, group_id=group_id)
     db.add(new_task)
     await db.commit()
     await db.refresh(new_task)
-    return {"message": "Групове завдання створено", "task_id": new_task.id}
+    return {"message": "Завдання створено", "task_id": new_task.id}
 
 
 @app.get("/api/groups/{group_id}/tasks")
-async def get_group_tasks(
-    group_id: int,
-    request:  Request,
-    db:       AsyncSession = Depends(get_db),
-):
-    """Завдання групи (доступно всім учасникам)."""
+async def get_group_tasks(group_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = require_user(request)
-
-    # Перевіряємо що юзер є власником або учасником
-    is_owner = await db.execute(
-        select(Group).where(Group.id == group_id, Group.owner_id == user_id)
-    )
-    is_member = await db.execute(
-        select(GroupMember).where(
-            GroupMember.group_id == group_id,
-            GroupMember.user_id == user_id,
+    g_res   = await db.execute(select(Group).where(Group.id == group_id))
+    group   = g_res.scalar_one_or_none()
+    if not group:
+        raise HTTPException(status_code=404, detail="Групу не знайдено")
+    if group.owner_id != user_id:
+        mc = await db.execute(
+            select(GroupMember).where(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
         )
-    )
-    if not is_owner.scalar_one_or_none() and not is_member.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Немає доступу до цієї групи")
-
-    result = await db.execute(
-        select(Task).where(Task.group_id == group_id)
-    )
-    tasks = result.scalars().all()
-
+        if not mc.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Немає доступу")
+    res   = await db.execute(select(Task).where(Task.group_id == group_id))
+    tasks = res.scalars().all()
     return [
-        {
-            "id":           t.id,
-            "title":        t.title,
-            "task_type":    t.task_type.value,
-            "is_completed": t.is_completed,
-            "due_date":     t.due_date.isoformat() if t.due_date else None,
-            "season":       t.season,
-        }
+        {"id": t.id, "title": t.title, "task_type": t.task_type.value,
+         "is_completed": t.is_completed,
+         "due_date": t.due_date.isoformat() if t.due_date else None, "season": t.season}
         for t in tasks
     ]
 
-# ── TASKS ──────────────────────────────────────────────────────────────────
 
 @app.post("/api/tasks")
-async def create_task(
-    task:    TaskCreate,
-    request: Request,
-    db:      AsyncSession = Depends(get_db),
-):
+async def create_task(task: TaskCreate, request: Request, db: AsyncSession = Depends(get_db)):
     user_id  = require_user(request)
     due_date = datetime.fromisoformat(task.due_date) if task.due_date else None
-
     try:
-        task_type_enum = TaskType(task.task_type)
+        tt = TaskType(task.task_type)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Невідомий task_type: {task.task_type}")
-
-    new_task = Task(
-        title=task.title,
-        task_type=task_type_enum,
-        due_date=due_date,
-        season=task.season,
-        user_id=user_id,
-        group_id=task.group_id,
-    )
+    new_task = Task(title=task.title, task_type=tt, due_date=due_date, season=task.season, user_id=user_id, group_id=task.group_id)
     db.add(new_task)
     await db.commit()
     await db.refresh(new_task)
@@ -347,75 +282,86 @@ async def create_task(
 @app.get("/api/tasks")
 async def get_tasks(request: Request, db: AsyncSession = Depends(get_db)):
     user_id = require_user(request)
-    result  = await db.execute(
-        select(Task).where(Task.user_id == user_id)
-    )
-    tasks = result.scalars().all()
+    res     = await db.execute(select(Task).where(Task.user_id == user_id))
+    tasks   = res.scalars().all()
     return [
-        {
-            "id":           t.id,
-            "title":        t.title,
-            "task_type":    t.task_type.value,
-            "is_completed": t.is_completed,
-            "due_date":     t.due_date.isoformat() if t.due_date else None,
-            "season":       t.season,
-        }
+        {"id": t.id, "title": t.title, "task_type": t.task_type.value,
+         "is_completed": t.is_completed,
+         "due_date": t.due_date.isoformat() if t.due_date else None, "season": t.season}
         for t in tasks
     ]
 
 
 @app.patch("/api/tasks/{task_id}/complete")
-async def complete_task(
-    task_id: int,
-    request: Request,
-    db:      AsyncSession = Depends(get_db),
-):
+async def complete_task(task_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     user_id = require_user(request)
-    result  = await db.execute(
-        select(Task).where(Task.id == task_id, Task.user_id == user_id)
-    )
-    task = result.scalar_one_or_none()
-
+    res     = await db.execute(select(Task).where(Task.id == task_id))
+    task    = res.scalar_one_or_none()
     if not task:
         raise HTTPException(status_code=404, detail="Завдання не знайдено")
-
+    if task.user_id and task.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Немає доступу")
     task.is_completed = True
     await db.commit()
-    return {"message": "Завдання виконано"}
+    return {"message": "Виконано"}
 
 
-# ── Telegram bot ───────────────────────────────────────────────────────────
+@app.patch("/api/tasks/{task_id}")
+async def update_task(task_id: int, body: TaskUpdate, request: Request, db: AsyncSession = Depends(get_db)):
+    """Редагування — свого завдання або завдання своєї групи."""
+    user_id = require_user(request)
+    res     = await db.execute(select(Task).where(Task.id == task_id))
+    task    = res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Завдання не знайдено")
+    if task.user_id:
+        if task.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Можна редагувати тільки свої завдання")
+    elif task.group_id:
+        gr = await db.execute(select(Group).where(Group.id == task.group_id, Group.owner_id == user_id))
+        if not gr.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Тільки власник групи може редагувати завдання")
+    if body.title    is not None: task.title    = body.title
+    if body.due_date is not None: task.due_date = datetime.fromisoformat(body.due_date)
+    if body.season   is not None: task.season   = body.season
+    await db.commit()
+    return {"message": "Завдання оновлено"}
+
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task(task_id: int, request: Request, db: AsyncSession = Depends(get_db)):
+    """Видалення — свого завдання або завдання своєї групи."""
+    user_id = require_user(request)
+    res     = await db.execute(select(Task).where(Task.id == task_id))
+    task    = res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Завдання не знайдено")
+    if task.user_id:
+        if task.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Можна видаляти тільки свої завдання")
+    elif task.group_id:
+        gr = await db.execute(select(Group).where(Group.id == task.group_id, Group.owner_id == user_id))
+        if not gr.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="Тільки власник групи може видаляти завдання")
+    await db.delete(task)
+    await db.commit()
+    return {"message": "Завдання видалено"}
+
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
     web_app_url = os.getenv("WEB_APP_URL", "https://your-app.render.com")
     args = message.text.split(maxsplit=1)
-    
-    # Якщо є параметр після /start — це запрошення в групу
     if len(args) > 1 and args[1].startswith("group_"):
-        await handle_group_invite(message, args[1])
+        await handle_group_invite(message, args[1], web_app_url)
         return
-
-    # Звичайний /start
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[
-            InlineKeyboardButton(
-                text="📋 Відкрити Task Tracker",
-                web_app=WebAppInfo(url=web_app_url),
-            )
-        ]]
-    )
-    await message.answer(
-        "👋 Привіт! Я твій Task Tracker.\n\n"
-        "Натисни кнопку нижче, щоб керувати завданнями:",
-        reply_markup=keyboard,
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="📋 Відкрити Task Tracker", web_app=WebAppInfo(url=web_app_url))
+    ]])
+    await message.answer("👋 Привіт! Я твій Task Tracker.\n\nНатисни кнопку нижче, щоб керувати завданнями:", reply_markup=keyboard)
 
 
-async def handle_group_invite(message: Message, param: str):
-    """Додає юзера до групи по deep link."""
-    web_app_url = os.getenv("WEB_APP_URL", "")
-    
+async def handle_group_invite(message: Message, param: str, web_app_url: str):
     try:
         group_id = int(param.replace("group_", ""))
     except ValueError:
@@ -423,77 +369,52 @@ async def handle_group_invite(message: Message, param: str):
         return
 
     async with AsyncSessionLocal() as db:
-        # Перевіряємо чи група існує
-        result = await db.execute(select(Group).where(Group.id == group_id))
-        group = result.scalar_one_or_none()
-
+        res   = await db.execute(select(Group).where(Group.id == group_id))
+        group = res.scalar_one_or_none()
         if not group:
-            await message.answer("❌ Групу не знайдено або вона була видалена.")
+            await message.answer("❌ Групу не знайдено або її видалено.")
             return
 
-        # Зберігаємо/оновлюємо юзера в БД
-        user = User(
+        open_btn = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="📋 Відкрити групу", web_app=WebAppInfo(url=f"{web_app_url}?group={group_id}"))
+        ]])
+
+        # ВИПРАВЛЕННЯ: власник не додається як учасник
+        if group.owner_id == message.from_user.id:
+            await message.answer(f"👑 Ти власник групи «{group.name}»!", reply_markup=open_btn)
+            return
+
+        # Зберігаємо юзера
+        await db.merge(User(
             telegram_id=message.from_user.id,
             username=message.from_user.username,
             first_name=message.from_user.first_name or "",
-        )
-        await db.merge(user)
+        ))
 
-        # Перевіряємо чи вже є в групі
-        result = await db.execute(
-            select(GroupMember).where(
-                GroupMember.group_id == group_id,
-                GroupMember.user_id == message.from_user.id,
-            )
+        # Перевіряємо чи вже учасник
+        existing = await db.execute(
+            select(GroupMember).where(GroupMember.group_id == group_id, GroupMember.user_id == message.from_user.id)
         )
-        existing = result.scalar_one_or_none()
-
-        if existing:
-            await message.answer(
-                f"✅ Ти вже учасник групи «{group.name}»!",
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                    InlineKeyboardButton(
-                        text="📋 Відкрити групу",
-                        web_app=WebAppInfo(url=f"{web_app_url}?group={group_id}"),
-                    )
-                ]])
-            )
+        if existing.scalar_one_or_none():
+            await message.answer(f"✅ Ти вже учасник групи «{group.name}»!", reply_markup=open_btn)
             return
 
-        # Додаємо до групи
-        member = GroupMember(group_id=group_id, user_id=message.from_user.id)
-        db.add(member)
+        db.add(GroupMember(group_id=group_id, user_id=message.from_user.id))
         await db.commit()
+        await message.answer(f"🎉 Ти успішно приєднався до групи «{group.name}»!", reply_markup=open_btn)
 
-        await message.answer(
-            f"🎉 Ти успішно приєднався до групи «{group.name}»!",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📋 Відкрити групу",
-                    web_app=WebAppInfo(url=f"{web_app_url}?group={group_id}"),
-                )
-            ]])
-        )
-
-
-# ── Reminders (APScheduler) ────────────────────────────────────────────────
 
 async def send_reminders():
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(Task).where(Task.is_completed == False)  # noqa: E712
-        )
-        tasks = result.scalars().all()
-
+        res   = await db.execute(select(Task).where(Task.is_completed == False))  # noqa: E712
+        tasks = res.scalars().all()
         user_tasks: dict[int, list[str]] = {}
         for task in tasks:
             if task.user_id:
                 user_tasks.setdefault(task.user_id, []).append(task.title)
-
-        for user_id, t_list in user_tasks.items():
-            text  = "🔔 Нагадування! Невиконані завдання:\n\n"
-            text += "\n".join(f"• {t}" for t in t_list)
+        for uid, t_list in user_tasks.items():
+            text = "🔔 Нагадування! Невиконані завдання:\n\n" + "\n".join(f"• {t}" for t in t_list)
             try:
-                await bot.send_message(chat_id=user_id, text=text)
+                await bot.send_message(chat_id=uid, text=text)
             except Exception as e:
-                print(f"[Reminder] Помилка для {user_id}: {e}")
+                print(f"[Reminder] Помилка для {uid}: {e}")
