@@ -32,14 +32,15 @@ class Group(Base):
 
 class Task(Base):
     __tablename__ = "tasks"
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    task_type = Column(Enum(TaskType), default=TaskType.SPECIFIC_DATE)
-    due_date = Column(DateTime, nullable=True)
-    season = Column(String, nullable=True)
+    id           = Column(Integer, primary_key=True, index=True)
+    title        = Column(String, nullable=False)
+    task_type    = Column(Enum(TaskType), default=TaskType.SPECIFIC_DATE)
+    due_date     = Column(DateTime, nullable=True)
+    season       = Column(String, nullable=True)
     is_completed = Column(Boolean, default=False)
-    user_id = Column(Integer, ForeignKey("users.telegram_id"), nullable=True)
-    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    user_id      = Column(Integer, ForeignKey("users.telegram_id"), nullable=True)
+    group_id     = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    created_by   = Column(Integer, ForeignKey("users.telegram_id"), nullable=True)  # ← НОВЕ
     
 class GroupMember(Base):
     __tablename__ = "group_members"
