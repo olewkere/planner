@@ -472,7 +472,7 @@
   tg.expand();
   tg.enableClosingConfirmation();
 
-  let currentUserId = null;   // Встановлюється після успішного логіну
+  let currentUserId = null;
   let currentFilter = 'all';
   let currentTab = 'tasks';
   let allTasks = [];
@@ -701,7 +701,7 @@
 
   // Deep link — запрошення в групу через бота
   function shareGroup(groupId, groupName) {
-    const botUsername = 'your_bot_username'; // ← заміни на свій
+    const botUsername = 'your_planner_bot';
     const link = `https://t.me/${botUsername}?start=group_${groupId}`;
     tg.showPopup({
       title: groupName,
