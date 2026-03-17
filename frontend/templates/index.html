@@ -518,7 +518,7 @@ async function submitGTask() {
 
 function shareGrp() {
   if(!curGrp) return;
-  const bot='your_bot_username'; // ← заміни!
+  const bot='your_planner_bot';
   const link=`https://t.me/${bot}?start=group_${curGrp.id}`;
   tg.showPopup({title:curGrp.name,message:'Поділись посиланням:',buttons:[{id:'s',type:'default',text:'📤 Поділитись'},{id:'c',type:'default',text:'📋 Скопіювати'},{id:'x',type:'destructive',text:'Закрити'}]},(b)=>{
     if(b==='s') tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(`Приєднуйся до групи "${curGrp.name}"`)}`);
